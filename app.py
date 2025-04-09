@@ -4,7 +4,7 @@ import networkx as nx
 import folium
 import requests
 from haversine import haversine, Unit
-
+import os
 
 app = Flask(__name__)
 
@@ -275,4 +275,6 @@ def show_route():
 
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    # app.run(debug=True)
+    port = int(os.environ.get('PORT', 5000))  
+    app.run(host='0.0.0.0', port=port, debug=True)
