@@ -1,6 +1,0 @@
-flask
-networkx
-folium
-requests
-haversine
-gunicorn
