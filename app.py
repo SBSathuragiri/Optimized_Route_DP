@@ -5,11 +5,14 @@ import folium
 import requests
 from haversine import haversine, Unit
 import os
+from dotenv import load_dotenv
+
 
 app = Flask(__name__)
+load_dotenv()
 
 OVERPASS_URL = 'https://overpass-api.de/api/interpreter'
-TOMTOM_API_KEY = "j2IDLy1tSTVa8w29gwlXaYD950PYvT14"
+TOMTOM_API_KEY = os.getenv("TOMTOM_API_KEY")
 
 ROAD_QUIETNESS = {
     'motorway': 5, 'trunk': 4, 'primary': 3, 'secondary': 2,
