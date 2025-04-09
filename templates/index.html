@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartXNavigator - Multi-Waypoint Path Finder</title>
+    <!-- Bootstrap for styling -->
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Leaflet CSS for maps -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #d7e5e5;
+            color: #333;
+        }
+
+        h1 {
+            text-align: center;
+            margin-top: 20px;
+            font-weight: 700;
+            color: #000000;
+        }
+
+        #map {
+            height: 500px;
+            margin-top: 20px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            border: 4px solid #000000;
+        }
+
+        .form-container {
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 25px;
+            background-color: #ffffff;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn-custom {
+            background-color: #28a745;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            transition: background-color 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .btn-custom:hover {
+            background-color: #218838;
+            box-shadow: 0 0 10px rgba(33, 136, 56, 0.5);
+        }
+
+        footer {
+            text-align: center;
+            margin-top: 40px;
+            padding: 20px 0;
+            background-color: #031222;
+            color: white;
+        }
+
+        .search-container {
+            max-width: 800px;
+            margin: 20px auto;
+            position: relative;
+        }
+
+        .search-bar {
+            width: 100%;
+            padding: 12px 20px;
+            font-size: 16px;
+            border: 2px solid #ddd;
+            border-radius: 25px;
+            outline: none;
+            transition: border-color 0.3s ease;
+            background-color: white;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .search-bar:focus {
+            border-color: #28a745;
+            box-shadow: 0 2px 8px rgba(40, 167, 69, 0.2);
+        }
+
+        .search-icon {
+            position: absolute;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #666;
+            pointer-events: none;
+        }
+
+        .highlight {
+            background-color: #fff3cd;
+            padding: 2px 0;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>Advance Navigation - Find Your Best Route</h1>
+    <div class="search-container">
+        <input type="text" class="search-bar" id="searchInput"
+            placeholder="Search locations, routes, or preferences...">
+        <span class="search-icon">🔍</span>
+    </div>
+    <div class="container">
+        <div id="map"></div>
+
+        <div class="form-container mt-4">
+            <h3 class="text-center mb-4">Select Your Route Preferences</h3>
+            <p><strong>Click on the map:</strong></p>
+            <ul>
+                <li><strong>First Click:</strong> Start Point</li>
+                <li><strong>Middle Clicks:</strong> Waypoints (Optional)</li>
+                <li><strong>Last Click:</strong> End Point</li>
+            </ul>
+
+            <div class="form-group">
+                <label>Choose Path Preference:</label>
+                <div class="d-flex">
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="path_type" value="distance" id="distance"
+                            checked>
+                        <label class="form-check-label" for="distance">Shortest Distance</label>
+                    </div>
+                    <div class="form-check ml-4">
+                        <input class="form-check-input" type="radio" name="path_type" value="traffic" id="traffic">
+                        <label class="form-check-label" for="traffic">Quickest Route (Traffic-Based)</label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="text-center">
+                <button type="button" id="submit-btn" class="btn btn-custom">Find Path</button>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <p>Smart Navigator</p>
+    </footer>
+
+    <!-- Leaflet JS for maps -->
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        // Initialize the map centered at Madurai, Tamil Nadu
+        var map = L.map('map').setView([9.9252, 78.1198], 13);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
+
+        var startMarker, endMarker;
+        var waypoints = [];
+
+        function onMapClick(e) {
+            if (!startMarker) {
+                startMarker = L.marker(e.latlng, { draggable: true }).addTo(map)
+                    .bindPopup("Start Point").openPopup();
+            } else if (!endMarker) {
+                endMarker = L.marker(e.latlng, { draggable: true }).addTo(map)
+                    .bindPopup("End Point").openPopup();
+            } else {
+                let wpMarker = L.marker(e.latlng, { draggable: true }).addTo(map)
+                    .bindPopup("Waypoint").openPopup();
+                waypoints.push(wpMarker.getLatLng());
+            }
+        }
+
+        map.on('click', onMapClick);
+
+        document.getElementById('submit-btn').addEventListener('click', function () {
+            if (startMarker && endMarker) {
+                let startCoords = startMarker.getLatLng();
+                let endCoords = endMarker.getLatLng();
+                let waypointCoords = waypoints.map(wp => `${wp.lat},${wp.lng}`).join(";");
+                let pathType = document.querySelector('input[name="path_type"]:checked').value;
+
+                window.location.href = `/show_route?start_lat=${startCoords.lat}&start_lon=${startCoords.lng}&end_lat=${endCoords.lat}&end_lon=${endCoords.lng}&waypoints=${waypointCoords}&path_type=${pathType}`;
+            } else {
+                alert("Please select at least a start and end point.");
+            }
+        });
+
+        // Search functionality
+        const searchInput = document.getElementById('searchInput');
+        let searchTimeout;
+        let searchMarker = null;
+
+        searchInput.addEventListener('input', function (e) {
+            const searchTerm = e.target.value.trim();
+
+            clearTimeout(searchTimeout);
+
+            if (searchTerm === '') {
+                if (searchMarker) {
+                    map.removeLayer(searchMarker);
+                    searchMarker = null;
+                }
+                return;
+            }
+
+            searchTimeout = setTimeout(() => {
+                fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchTerm)}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.length > 0) {
+                            const location = data[0];
+                            const lat = parseFloat(location.lat);
+                            const lon = parseFloat(location.lon);
+
+                            if (searchMarker) {
+                                map.removeLayer(searchMarker);
+                            }
+
+                            searchMarker = L.marker([lat, lon], { draggable: true })
+                                .addTo(map)
+                                .bindPopup(`<b>${location.display_name}</b>`)
+                                .openPopup();
+
+                            map.setView([lat, lon], 12);
+                        }
+                    })
+                    .catch(error => console.error('Error:', error));
+            }, 500);
+        });
+
+    </script>
+
+</body>
+
+</html>
